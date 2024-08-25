@@ -963,7 +963,6 @@
     <style>
       /* Popup Container Styles */
       .popup {
-        display: block; /* Hidden by default */
         position: fixed;
         bottom: 20px;
         right: 20px;
@@ -979,7 +978,7 @@
 
       /* Popup Content Styles */
       .popup-content {
-        padding: 20px 40px 20px 20px;
+        padding: 20px 40px 20px 0px;
         position: relative;
         flex: 1; /* Takes up remaining space */
       }
@@ -991,11 +990,21 @@
         right: 10px;
         font-size: 20px;
         cursor: pointer;
+        z-index: 1300;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        text-align: center;
+        vertical-align: middle;
+      }
+
+      .popup-close:hover {
+        background-color: #eeeeee95;
       }
 
       /* Image Styles */
       .popup-img {
-        padding: 20px 0 20px 20px;
+        padding: 20px 20px 20px 20px;
         margin: auto;
         width: 150px; /* Adjust size as needed */
         height: 150px; /* Adjust size as needed */
@@ -1010,13 +1019,17 @@
       /* Shrinked Popup Container Styles */
       .popup.shrink {
         width: auto; /* Smaller width when shrunk */
-        height: 100px; /* Smaller height when shrunk */
+        height: auto; /* Smaller height when shrunk */
         overflow: hidden; /* Hide overflow if content exceeds */
       }
 
-      .popup-img.shrink {
-        display: none; /* Hide overflow if content exceeds */
+      .popup-content.shrink {
+        display: none;
       }
+
+      /* .popup-img.shrink {
+        display: none; 
+      }dsfg */
 
       h2 {
         margin: 0;
@@ -1051,9 +1064,9 @@
         transform: translate(-50%, -50%);
         background-color: #007bffce; /* Green background */
         color: #fff;
-        padding: 15px 30px;
+        padding: 15px 15px;
         border-radius: 4px;
-        font-size: 16px;
+        font-size: 20px;
         z-index: 1001; /* Ensure it is above the popup */
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         transition: opacity 0.5s, visibility 0.5s;
@@ -1069,6 +1082,15 @@
         opacity: 0; /* Hidden */
         visibility: hidden; /* Hidden */
         transition: opacity 0.5s, visibility 0.5s;
+      }
+
+      canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
       }
     </style>
   </head>
@@ -2253,15 +2275,18 @@
     </div>
 
     <div id="productModal" class="popup">
+      <span id="closeModal" class="popup-close">&minus;</span>
       <img src="" alt="Product Image" class="popup-img" />
 
-      <div class="popup-content">
-        <span id="closeModal" class="popup-close">&times;</span>
+      <div class="popup-content" id="modalContent">
         <h2 id="productName">Product Name</h2>
-        <p><strong>Sale Price:</strong> <span id="productSalePrice">$0.00</span></p>
         <p>
-          <strong>Price:</strong> <s><span id="productPrice">$0.00</span></s>
+          <strong><span id="productSalePrice">$0.00</span></strong
+          >&nbsp;&nbsp;&nbsp;&nbsp;<s><span id="productPrice">$0.00</span></s>
         </p>
+        <!-- <p>
+          <strong>Price:</strong> <s><span id="productPrice">$0.00</span></s>
+        </p> -->
         <p><strong>Size:</strong> <span id="productSize">N/A</span></p>
         <p><strong>Color:</strong> <span id="productColor">N/A</span></p>
         <p><strong>Quantity:</strong> <span id="productQuantity">1</span></p>
@@ -2270,15 +2295,19 @@
     </div>
 
     <!-- Notification Message -->
-    <div id="notification" class="popup-notification">Item added to cart.</div>
+    <div id="notification" class="popup-notification">🎉 🎉 &nbsp;&nbsp;<strong>Item added to cart.</strong>&nbsp;&nbsp; 🎉 🎉</div>
 
+    <canvas id="canvas"></canvas>
     <!-- Inline JavaScript -->
+    <script src="confetti.js"></script>
     <script>
       // Get modal elements
       const modal = document.getElementById("productModal");
+      const modalContent = document.getElementById("modalContent");
       const closeModal = document.getElementById("closeModal");
       const addToCartBtn = document.getElementById("addToCartBtn");
       const notification = document.getElementById("notification");
+      const canvas = document.getElementById("canvas");
 
       // Example product information
       const productInfo = {
@@ -2287,7 +2316,8 @@
         salePrice: insider_object.product["unit_sale_price"],
         size: document.querySelector("#SingleOptionSelector-0").value,
         color: document.querySelector("#SingleOptionSelector-1").value,
-        quantity: Number(document.querySelector("#Quantity").value)
+        quantity: Number(document.querySelector("#Quantity").value),
+        imageLink: document.querySelector(".product-single__thumbnail-item img").src
       };
 
       function updateProductInfo() {
@@ -2304,15 +2334,21 @@
         document.getElementById("productSize").textContent = document.querySelector("#SingleOptionSelector-0").value;
         document.getElementById("productColor").textContent = document.querySelector("#SingleOptionSelector-1").value;
         document.getElementById("productQuantity").textContent = document.querySelector("#Quantity").value;
-        document.querySelector(".popup-img").src = document.querySelector(".product-single__thumbnail-item img").src;
+        document.querySelector(".popup-img").src = productInfo.imageLink;
         updateProductInfo();
       }
 
       // Function to close the modal
       function closeModalFn() {
         // modal.style.display = "none";
-        document.querySelector("img.popup-img").classList.toggle("shrink");
+        // document.querySelector("img.popup-img").classList.toggle("shrink");
+        modalContent.classList.toggle("shrink");
         modal.classList.toggle("shrink");
+        if (modal.classList.contains("shrink")) {
+          closeModal.innerText = "\u2922";
+        } else {
+          closeModal.innerText = "\u2212";
+        }
       }
 
       // Function to handle add to cart
@@ -2321,11 +2357,18 @@
         console.log(notification);
         notification.classList.remove("hide");
         notification.classList.add("show");
-        document.querySelector(".site-header__cart-indicator").classList.remove("hide");
+        document.querySelectorAll(".site-header__cart-indicator").forEach(function (dom) {
+          dom.classList.remove("hide");
+        });
+        canvas.style.zIndex = "200";
+        relaunchConfetti();
         setTimeout(() => {
           notification.classList.remove("show");
           notification.classList.add("hide");
-        }, 2000); // Hide the notification after 2 seconds
+        }, 4000); // Hide the notification after 2 seconds
+        setTimeout(() => {
+          canvas.style.zIndex = "-1";
+        }, 4000);
       }
 
       // Event listeners
